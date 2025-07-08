@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>事業承継シミュレーション</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; max-width: 800px; margin: 2rem auto; line-height: 1.6; }
+    h1, h2 { color: #2c3e50; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: center; }
+    th { background-color: #f0f0f0; }
+    .note { font-size: 0.9em; color: #555; }
+    img { width: 100%; max-width: 600px; margin: 1rem auto; display: block; }
+    label { font-weight: bold; }
+    input { margin-bottom: 0.5rem; width: 100%; padding: 0.3rem; }
+    #result { background: #eef; padding: 1rem; margin-top: 2rem; border: 1px solid #ccd; }
+    #summary { margin-top: 1rem; padding: 1rem; background-color: #eaffea; border: 1px solid #b2d8b2; }
+    .explain { font-size: 0.9em; color: #555; margin-bottom: 0.3rem; }
+  </style>
+</head>
+<body>
+  <h1>事業承継シミュレーション</h1>
+
+  <form id="simForm">
+    <label>現在の年間売上高（万円）：<input type="number" id="sales" required></label>
+    <div class="explain">事業の現時点での年間売上金額。承継後の比較や利益算出の基礎となります。</div>
+
+    <label>承継後売上減少率（％）：<input type="number" id="decline_rate" required></label>
+    <div class="explain">事業承継後に売上が下がると想定される割合。顧客離れや引継ぎ不安などが理由となることがあります。</div>
+
+    <label>顧客流出率（％）：<input type="number" id="loss_rate" required></label>
+    <div class="explain">承継により離れると想定される顧客割合。売上減少率の裏付けデータになります。</div>
+
+    <fieldset style="margin-top: 2rem; padding: 1rem; border: 1px solid #ccc;">
+      <legend><strong>【コスト内訳の入力】</strong></legend>
+
+      <label>採用人数：<input type="number" id="hire_count" required></label>
+      <div class="explain">事業承継に伴って新たに雇用する必要がある人数（退職者補填や増員など）</div>
+
+      <label>1人あたり採用費（万円）：<input type="number" id="hire_cost" required></label>
+      <div class="explain">求人広告費や人材紹介料、選考コストなど。1人あたりの平均的な採用コストを記入してください。</div>
+
+      <label>1人あたり研修費（万円）：<input type="number" id="training_cost" required></label>
+      <div class="explain">導入研修・OJT・外部研修の合計。1人あたりの費用としてご入力ください。</div>
+
+      <label>専門家報酬（顧問・弁護士・会計士など）（万円）：<input type="number" id="consult_fee" required></label>
+      <div class="explain">事業承継にあたり必要となる専門家のサポート費用。契約期間や業務内容に応じて入力してください。</div>
+
+      <label>損害賠償などのリスク想定額（万円）：<input type="number" id="risk_buffer" required></label>
+      <div class="explain">万が一のトラブルに備えて見込む予備費。実際の係争事例や契約リスクから想定。</div>
+
+      <label>その他のれん償却・設備補填など（万円）：<input type="number" id="other_costs" required></label>
+      <div class="explain">見えにくい経費（ブランド引継ぎ、老朽設備更新など）を含めた雑費の合計。</div>
+    </fieldset>
+
+    <label>経常利益率（％）：<input type="number" id="profit_rate" required></label>
+    <div class="explain">売上に対する年間の利益割合。過去実績や同業平均などをもとに見積もってください。</div>
+
+    <button type="submit">計算する</button>
+  </form>
+
+  <div id="result" style="display: none;">
+    <h2>シミュレーション結果</h2>
+    <p>損益回収に必要な年数：<strong id="payback_years"></strong> 年</p>
+    <div id="summary">
+      <h3>事業承継シナリオまとめ</h3>
+      <p id="scenario_summary"></p>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('simForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const sales = parseFloat(document.getElementById('sales').value);
+      const decline = parseFloat(document.getElementById('decline_rate').value);
+      const loss = parseFloat(document.getElementById('loss_rate').value);
+      const hireCount = parseFloat(document.getElementById('hire_count').value);
+      const hireCost = parseFloat(document.getElementById('hire_cost').value);
+      const trainingCost = parseFloat(document.getElementById('training_cost').value);
+      const consultFee = parseFloat(document.getElementById('consult_fee').value);
+      const riskBuffer = parseFloat(document.getElementById('risk_buffer').value);
+      const otherCosts = parseFloat(document.getElementById('other_costs').value);
+      const profitRate = parseFloat(document.getElementById('profit_rate').value);
+
+      const cost = (hireCount * (hireCost + trainingCost)) + consultFee + riskBuffer + otherCosts;
+
+      const reducedSales = sales * (1 - decline / 100);
+      const annualProfit = reducedSales * (profitRate / 100);
+      const years = (annualProfit > 0) ? (cost / annualProfit).toFixed(2) : '回収不能';
+
+      document.getElementById('payback_years').textContent = years;
+      document.getElementById('result').style.display = 'block';
+
+      let summary = "";
+      if (annualProfit <= 0) {
+        summary = "この条件では利益が見込めず、事業承継の経済合理性は低いと判断されます。コストや売上予測を見直す必要があります。";
+      } else if (years <= 1.5) {
+        summary = `およそ ${years} 年で初期費用を回収でき、承継は経済的に有望といえます。継続的な利益確保が見込めるでしょう。`;
+      } else if (years <= 3) {
+        summary = `およそ ${years} 年で回収可能ですが、慎重なシナリオ設計が必要です。承継判断の際は追加の検討を推奨します。`;
+      } else {
+        summary = `回収までに ${years} 年以上かかる見込みであり、リスクも伴います。承継以外の選択肢も含めて再検討してください。`;
+      }
+
+      document.getElementById('scenario_summary').textContent = summary;
+    });
+  </script>
+</body>
+</html>
